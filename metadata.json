@@ -1,0 +1,6 @@
+{
+  "name": "Relógio de Rotina",
+  "description": "Visual Schedule Clock para organização de rotina diária com relógio interativo, drag-and-drop, lembretes e modo escuro.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

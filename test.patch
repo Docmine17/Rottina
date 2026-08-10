@@ -1,0 +1,29 @@
+--- app/src/main/java/com/example/ui/components/VisualClockCanvas.kt
++++ app/src/main/java/com/example/ui/components/VisualClockCanvas.kt
+@@ -238,7 +238,7 @@
+         val center = Offset(sizePx / 2f, sizePx / 2f)
+ 
+         // Radii configuration - enlarged outer ring to fit thicker task arcs
+-        val clockRadius = if (is12HourDial) sizePx * 0.22f else sizePx * 0.28f
++        val clockRadius = if (is12HourDial) sizePx * 0.25f else sizePx * 0.31f
+         val arcRadius = sizePx * 0.41f // Used in 24h mode
+         val innerArcRadius = sizePx * 0.32f // AM ring in AM/PM mode
+         val outerArcRadius = sizePx * 0.44f // PM ring in AM/PM mode
+@@ -286,7 +286,7 @@
+         val textPaint = remember(textColor, is12HourDial) {
+             android.graphics.Paint().apply {
+                 color = textColor.toArgb()
+-                textSize = with(density) { if (is12HourDial) 16.sp.toPx() else 11.sp.toPx() }
++                textSize = with(density) { if (is12HourDial) 18.sp.toPx() else 13.sp.toPx() }
+                 textAlign = android.graphics.Paint.Align.CENTER
+                 isAntiAlias = true
+                 typeface = android.graphics.Typeface.DEFAULT_BOLD
+@@ -296,7 +296,7 @@
+         val minuteTextPaint = remember(textColor, is12HourDial) {
+             android.graphics.Paint().apply {
+                 color = textColor.copy(alpha = 0.6f).toArgb()
+-                textSize = with(density) { if (is12HourDial) 10.sp.toPx() else 9.sp.toPx() }
++                textSize = with(density) { if (is12HourDial) 12.sp.toPx() else 11.sp.toPx() }
+                 textAlign = android.graphics.Paint.Align.CENTER
+                 isAntiAlias = true
+             }
