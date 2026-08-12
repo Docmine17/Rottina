@@ -246,6 +246,7 @@ fun TaskEditBottomSheet(
             }
 
             if (showEmojiPicker) {
+                val isDark = androidx.compose.foundation.isSystemInDarkTheme()
                 Dialog(
                     onDismissRequest = { showEmojiPicker = false },
                     properties = DialogProperties(usePlatformDefaultWidth = false)
@@ -259,7 +260,9 @@ fun TaskEditBottomSheet(
                     ) {
                         AndroidView(
                             factory = { context ->
-                                EmojiPickerView(context).apply {
+                                val themeRes = if (isDark) android.R.style.Theme_DeviceDefault else android.R.style.Theme_DeviceDefault_Light
+                                val wrapper = android.view.ContextThemeWrapper(context, themeRes)
+                                EmojiPickerView(wrapper).apply {
                                     setOnEmojiPickedListener { item ->
                                         selectedIcon = item.emoji
                                         showEmojiPicker = false
