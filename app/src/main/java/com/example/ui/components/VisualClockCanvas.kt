@@ -238,7 +238,7 @@ fun VisualClockCanvas(
         val center = Offset(sizePx / 2f, sizePx / 2f)
 
         // Radii configuration - enlarged outer ring to fit thicker task arcs
-        val clockRadius = if (is12HourDial) sizePx * 0.25f else sizePx * 0.31f
+        val clockRadius = if (is12HourDial) sizePx * 0.25f else sizePx * 0.33f
         val arcRadius = sizePx * 0.41f // Used in 24h mode
         val innerArcRadius = sizePx * 0.32f // AM ring in AM/PM mode
         val outerArcRadius = sizePx * 0.44f // PM ring in AM/PM mode
@@ -653,7 +653,7 @@ fun VisualClockCanvas(
                 if (is12HourDial) {
                     val tickStartRadius = clockRadius - 6.dp.toPx()
                     val tickEndRadius = clockRadius - 12.dp.toPx()
-                    val numRadius = clockRadius - 22.dp.toPx()
+                    val numRadius = clockRadius - 28.dp.toPx()
 
                     val tickStart = Offset(
                         (center.x + tickStartRadius * cos(rad)).toFloat(),
@@ -678,9 +678,9 @@ fun VisualClockCanvas(
                     drawContext.canvas.nativeCanvas.drawText(i.toString(), numX, numY, textPaint)
                 } else {
                     // 24 Hour Dial Layout
-                    val tickOuterRadius = clockRadius - 22.dp.toPx()
-                    val tickInnerRadius = clockRadius - 28.dp.toPx()
-                    val numRadius = clockRadius - 10.dp.toPx()
+                    val tickOuterRadius = clockRadius - 28.dp.toPx()
+                    val tickInnerRadius = clockRadius - 34.dp.toPx()
+                    val numRadius = clockRadius - 16.dp.toPx()
                     
                     val tickStart = Offset(
                         (center.x + tickOuterRadius * cos(rad)).toFloat(),
@@ -710,8 +710,8 @@ fun VisualClockCanvas(
             // Minor Ticks for minutes
             for (m in 0 until 60) {
                 if (m % 5 != 0) {
-                    val minorTickStart = if (is12HourDial) clockRadius - 3.dp.toPx() else clockRadius - 24.dp.toPx()
-                    val minorTickEnd = if (is12HourDial) clockRadius - 6.dp.toPx() else clockRadius - 28.dp.toPx()
+                    val minorTickStart = if (is12HourDial) clockRadius - 3.dp.toPx() else clockRadius - 30.dp.toPx()
+                    val minorTickEnd = if (is12HourDial) clockRadius - 6.dp.toPx() else clockRadius - 34.dp.toPx()
                     
                     val mAngle = (m * 6f) - 90f
                     val rad = Math.toRadians(mAngle.toDouble())
@@ -728,7 +728,7 @@ fun VisualClockCanvas(
                     val mAngle = (m * 6f) - 90f
                     val rad = Math.toRadians(mAngle.toDouble())
                     
-                    val minNumRadius = clockRadius - 38.dp.toPx()
+                    val minNumRadius = clockRadius - 44.dp.toPx()
                     val numX = (center.x + minNumRadius * cos(rad)).toFloat()
                     val numY = (center.y + minNumRadius * sin(rad) + minuteTextPaint.textSize / 3f).toFloat()
                     
