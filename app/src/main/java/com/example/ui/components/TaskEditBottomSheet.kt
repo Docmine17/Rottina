@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -24,6 +25,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Tune
@@ -56,6 +58,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.emoji2.emojipicker.EmojiPickerView
 import com.example.data.model.RoutineTask
 import java.util.Locale
 
@@ -185,6 +191,8 @@ fun TaskEditBottomSheet(
                 color = MaterialTheme.colorScheme.onSurface
             )
 
+            var showEmojiPicker by remember { mutableStateOf(false) }
+
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
@@ -202,6 +210,62 @@ fun TaskEditBottomSheet(
                         Box(contentAlignment = Alignment.Center) {
                             Text(text = icon, fontSize = 22.sp)
                         }
+                    }
+                }
+                item {
+                    val isCustomEmojiSelected = selectedIcon !in PRESET_ICONS
+                    Surface(
+                        modifier = Modifier
+                            .height(48.dp)
+                            .defaultMinSize(minWidth = 48.dp)
+                            .clip(CircleShape)
+                            .clickable { showEmojiPicker = true },
+                        shape = CircleShape,
+                        color = if (isCustomEmojiSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+                        border = if (isCustomEmojiSelected) androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = if (isCustomEmojiSelected) 12.dp else 0.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (isCustomEmojiSelected) {
+                                Text(text = selectedIcon, fontSize = 22.sp)
+                                Spacer(modifier = Modifier.width(4.dp))
+                            }
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Mais Emojis",
+                                tint = if (isCustomEmojiSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (showEmojiPicker) {
+                Dialog(
+                    onDismissRequest = { showEmojiPicker = false },
+                    properties = DialogProperties(usePlatformDefaultWidth = false)
+                ) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth(0.9f)
+                            .height(450.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.surface
+                    ) {
+                        AndroidView(
+                            factory = { context ->
+                                EmojiPickerView(context).apply {
+                                    setOnEmojiPickedListener { item ->
+                                        selectedIcon = item.emoji
+                                        showEmojiPicker = false
+                                    }
+                                }
+                            },
+                            modifier = Modifier.padding(8.dp)
+                        )
                     }
                 }
             }

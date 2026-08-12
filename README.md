@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="app/src/main/res/mipmap-xxxhdpi/ic_launcher.webp" alt="Ícone do Relógio de Rotina" width="128" />
+  <img src="app_icon.svg" alt="Ícone do Relógio de Rotina" width="128" />
   <h1>Relógio de Rotina</h1>
 </div>
 
