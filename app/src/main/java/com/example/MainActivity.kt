@@ -196,6 +196,7 @@ fun VisualClockAppScreen(viewModel: VisualClockViewModel) {
                     activeTasks.forEach { currentTask ->
                         val taskColor = parseHexColor(currentTask.colorHex)
                         Surface(
+                            onClick = { viewModel.openEditTask(currentTask) },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 20.dp),
