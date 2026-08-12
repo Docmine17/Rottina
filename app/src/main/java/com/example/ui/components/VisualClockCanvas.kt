@@ -1,9 +1,7 @@
 package com.example.ui.components
 
-import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -212,18 +210,6 @@ fun VisualClockCanvas(
     modifier: Modifier = Modifier
 ) {
     val density = LocalDensity.current
-
-    // Pulsing aura scale animation for current active task
-    val pulseAnim = remember { Animatable(1f) }
-    LaunchedEffect(Unit) {
-        pulseAnim.animateTo(
-            targetValue = 1.08f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(1200, easing = FastOutSlowInEasing),
-                repeatMode = RepeatMode.Reverse
-            )
-        )
-    }
 
     val currentMinuteOfDay = currentTime.hour * 60 + currentTime.minute
 
@@ -594,7 +580,7 @@ fun VisualClockCanvas(
 
                 // Active glow background
                 if (isActive) {
-                    val glowOffset = (pulseAnim.value - 1f) * 30.dp.toPx() + 4.dp.toPx()
+                    val glowOffset = 6.dp.toPx()
                     val glowInnerR = maxOf(5f, innerR - glowOffset)
                     val glowOuterR = outerR + glowOffset
 
