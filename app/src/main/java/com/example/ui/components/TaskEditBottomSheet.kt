@@ -119,7 +119,9 @@ fun TaskEditBottomSheet(
     if (task == null) return
 
     var title by remember(task) { mutableStateOf(task.title) }
-    var selectedIcon by remember(task) { mutableStateOf(task.icon) }
+    var selectedIcon by remember(task) { 
+        mutableStateOf(if (task.id == 0 && (task.icon == "⭐" || task.icon == "⏱️")) PRESET_ICONS.first() else task.icon) 
+    }
     var selectedColorHex by remember(task) {
         mutableStateOf(if (task.id == 0 && task.colorHex.isEmpty()) PRESET_COLORS.random() else task.colorHex)
     }
