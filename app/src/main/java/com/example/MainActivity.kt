@@ -28,8 +28,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.NightlightRound
 import androidx.compose.material.icons.filled.Schedule
@@ -173,7 +173,7 @@ fun VisualClockAppScreen(viewModel: VisualClockViewModel) {
                         onClick = { viewModel.openTutorial() }
                     ) {
                         Icon(
-                            imageVector = Icons.Default.HelpOutline,
+                            imageVector = Icons.AutoMirrored.Filled.HelpOutline,
                             contentDescription = "Abrir Tutorial",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
