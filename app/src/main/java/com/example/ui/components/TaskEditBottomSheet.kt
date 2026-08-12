@@ -195,6 +195,7 @@ fun TaskEditBottomSheet(
                             .size(48.dp)
                             .clip(CircleShape)
                             .clickable { selectedIcon = icon },
+                        shape = CircleShape,
                         color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
                         border = if (isSelected) androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
                     ) {
