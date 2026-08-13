@@ -3,6 +3,7 @@ package com.example.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,11 +15,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -185,7 +181,7 @@ fun TaskEditBottomSheet(
                 )
             )
 
-            // Icon Selector Grid
+            // Icon Selector
             Text(
                 text = "Ícone / Emoji",
                 style = MaterialTheme.typography.titleMedium,
@@ -195,10 +191,13 @@ fun TaskEditBottomSheet(
 
             var showEmojiPicker by remember { mutableStateOf(false) }
 
-            LazyRow(
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                items(PRESET_ICONS) { icon ->
+                PRESET_ICONS.forEach { icon ->
                     val isSelected = icon == selectedIcon
                     Surface(
                         modifier = Modifier
@@ -214,33 +213,32 @@ fun TaskEditBottomSheet(
                         }
                     }
                 }
-                item {
-                    val isCustomEmojiSelected = selectedIcon !in PRESET_ICONS
-                    Surface(
-                        modifier = Modifier
-                            .height(48.dp)
-                            .defaultMinSize(minWidth = 48.dp)
-                            .clip(CircleShape)
-                            .clickable { showEmojiPicker = true },
-                        shape = CircleShape,
-                        color = if (isCustomEmojiSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
-                        border = if (isCustomEmojiSelected) androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
+
+                val isCustomEmojiSelected = selectedIcon !in PRESET_ICONS
+                Surface(
+                    modifier = Modifier
+                        .height(48.dp)
+                        .defaultMinSize(minWidth = 48.dp)
+                        .clip(CircleShape)
+                        .clickable { showEmojiPicker = true },
+                    shape = CircleShape,
+                    color = if (isCustomEmojiSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+                    border = if (isCustomEmojiSelected) androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = if (isCustomEmojiSelected) 12.dp else 0.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = if (isCustomEmojiSelected) 12.dp else 0.dp),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            if (isCustomEmojiSelected) {
-                                Text(text = selectedIcon, fontSize = 22.sp)
-                                Spacer(modifier = Modifier.width(4.dp))
-                            }
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = "Mais Emojis",
-                                tint = if (isCustomEmojiSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                        if (isCustomEmojiSelected) {
+                            Text(text = selectedIcon, fontSize = 22.sp)
+                            Spacer(modifier = Modifier.width(4.dp))
                         }
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Mais Emojis",
+                            tint = if (isCustomEmojiSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
             }
@@ -283,10 +281,13 @@ fun TaskEditBottomSheet(
                 color = MaterialTheme.colorScheme.onSurface
             )
 
-            LazyRow(
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(PRESET_COLORS) { hex ->
+                PRESET_COLORS.forEach { hex ->
                     val color = parseHexColor(hex)
                     val isSelected = hex == selectedColorHex
                     Box(
@@ -347,7 +348,6 @@ fun TaskEditBottomSheet(
                     value = startMinute.toFloat(),
                     onValueChange = { startMinute = ((it / 5).toInt() * 5) % 1440 },
                     valueRange = 0f..1435f,
-                    steps = 287,
                     colors = SliderDefaults.colors(
                         thumbColor = MaterialTheme.colorScheme.primary,
                         activeTrackColor = MaterialTheme.colorScheme.primary
@@ -384,10 +384,13 @@ fun TaskEditBottomSheet(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                LazyRow(
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(DURATION_PRESETS) { (mins, label) ->
+                    DURATION_PRESETS.forEach { (mins, label) ->
                         val isSelected = !isCustomDuration && durationMinutes == mins
                         if (isSelected) {
                             Button(
@@ -413,34 +416,32 @@ fun TaskEditBottomSheet(
                         }
                     }
 
-                    item {
-                        if (isCustomDuration) {
-                            Button(
-                                onClick = { isCustomDuration = true },
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Tune,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Personalizado", fontWeight = FontWeight.Bold)
-                            }
-                        } else {
-                            OutlinedButton(
-                                onClick = { isCustomDuration = true },
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Tune,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Personalizado")
-                            }
+                    if (isCustomDuration) {
+                        Button(
+                            onClick = { isCustomDuration = true },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Tune,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Personalizado", fontWeight = FontWeight.Bold)
+                        }
+                    } else {
+                        OutlinedButton(
+                            onClick = { isCustomDuration = true },
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Tune,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Personalizado")
                         }
                     }
                 }
@@ -480,7 +481,6 @@ fun TaskEditBottomSheet(
                                 value = durationMinutes.coerceIn(5, 720).toFloat(),
                                 onValueChange = { durationMinutes = ((it / 5).toInt() * 5).coerceIn(5, 720) },
                                 valueRange = 5f..720f,
-                                steps = 142,
                                 colors = SliderDefaults.colors(
                                     thumbColor = MaterialTheme.colorScheme.primary,
                                     activeTrackColor = MaterialTheme.colorScheme.primary
@@ -556,3 +556,4 @@ fun TaskEditBottomSheet(
         }
     }
 }
+
