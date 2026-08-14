@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import android.text.format.DateFormat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -7,6 +8,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
@@ -24,6 +26,8 @@ import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -41,6 +45,8 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -51,6 +57,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -59,6 +66,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.emoji2.emojipicker.EmojiPickerView
 import com.example.data.model.RoutineTask
+import java.time.LocalTime
 import java.util.Locale
 
 private val PRESET_ICONS = listOf(
@@ -298,7 +306,16 @@ fun TaskEditBottomSheet(
             ) {
                 PRESET_COLORS.forEach { hex ->
                     val color = parseHexColor(hex)
-                    val isSelected = hex == selectedColorHex
+                    val isSelected = hex.equals(selectedColorHex, ignoreCase = true)
+                    
+                    // Choose white or black checkmark depending on luminance for clear visibility
+                    val isLightColor = hex.equals("#FFEB3B", ignoreCase = true) || 
+                                       hex.equals("#FFC107", ignoreCase = true) || 
+                                       hex.equals("#CDDC39", ignoreCase = true) ||
+                                       hex.equals("#8BC34A", ignoreCase = true) ||
+                                       hex.equals("#00BCD4", ignoreCase = true) ||
+                                       hex.equals("#03A9F4", ignoreCase = true)
+
                     Box(
                         modifier = Modifier
                             .size(42.dp)
@@ -306,61 +323,135 @@ fun TaskEditBottomSheet(
                             .background(color)
                             .clickable { selectedColorHex = hex }
                             .then(
-                                if (isSelected) Modifier.border(3.dp, MaterialTheme.colorScheme.onSurface, CircleShape) else Modifier
+                                if (isSelected) Modifier.border(3.5.dp, MaterialTheme.colorScheme.onSurface, CircleShape) else Modifier
                             ),
                         contentAlignment = Alignment.Center
                     ) {
                         if (isSelected) {
                             Icon(
                                 imageVector = Icons.Default.Check,
-                                contentDescription = null,
-                                tint = Color.Black,
-                                modifier = Modifier.size(20.dp)
+                                contentDescription = "Cor Selecionada",
+                                tint = if (isLightColor) Color.Black else Color.White,
+                                modifier = Modifier.size(22.dp)
                             )
                         }
                     }
                 }
             }
 
-            // Start Time Selector (Hours & Minutes)
-            val hour = (startMinute / 60) % 24
-            val minute = startMinute % 60
-            val formattedTime = String.format(Locale.getDefault(), "%02d:%02d", hour, minute)
+            // Start Time Selector with Material 3 TimePicker Dialog
+            val context = LocalContext.current
+            val is24HourFormat = remember { DateFormat.is24HourFormat(context) }
+            val currentHour = (startMinute / 60) % 24
+            val currentMinute = startMinute % 60
+            var showTimePickerDialog by remember { mutableStateOf(false) }
 
-            Column {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+            val displayFormattedTime = remember(startMinute, is24HourFormat) {
+                if (is24HourFormat) {
+                    String.format(Locale.getDefault(), "%02d:%02d", currentHour, currentMinute)
+                } else {
+                    val h12 = if (currentHour % 12 == 0) 12 else currentHour % 12
+                    val amPm = if (currentHour < 12) "AM" else "PM"
+                    String.format(Locale.getDefault(), "%02d:%02d %s", h12, currentMinute, amPm)
+                }
+            }
+
+            Column(
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text(
+                    text = "Horário de Início",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                // Interactive Card to open Material 3 TimePicker Dialog
+                Surface(
+                    onClick = { showTimePickerDialog = true },
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                    border = androidx.compose.foundation.BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(
-                        text = "Horário de Início",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Surface(
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        shape = RoundedCornerShape(8.dp)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = formattedTime,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Default.AccessTime,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onPrimary,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                            }
+
+                            Column {
+                                Text(
+                                    text = "Início Selecionado",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = displayFormattedTime,
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                        }
+
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = "Editar Horário",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Text(
+                                    text = "Alterar",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
                     }
                 }
+            }
 
-                Slider(
-                    value = startMinute.toFloat(),
-                    onValueChange = { startMinute = ((it / 5).toInt() * 5) % 1440 },
-                    valueRange = 0f..1435f,
-                    colors = SliderDefaults.colors(
-                        thumbColor = MaterialTheme.colorScheme.primary,
-                        activeTrackColor = MaterialTheme.colorScheme.primary
-                    )
+            if (showTimePickerDialog) {
+                Material3TimePickerDialog(
+                    initialHour = currentHour,
+                    initialMinute = currentMinute,
+                    is24Hour = is24HourFormat,
+                    onDismiss = { showTimePickerDialog = false },
+                    onConfirm = { selectedHour, selectedMinute ->
+                        startMinute = ((selectedHour * 60) + selectedMinute) % 1440
+                        showTimePickerDialog = false
+                    }
                 )
             }
 
@@ -565,4 +656,86 @@ fun TaskEditBottomSheet(
         }
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun Material3TimePickerDialog(
+    initialHour: Int,
+    initialMinute: Int,
+    is24Hour: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: (hour: Int, minute: Int) -> Unit
+) {
+    val timePickerState = rememberTimePickerState(
+        initialHour = initialHour,
+        initialMinute = initialMinute,
+        is24Hour = is24Hour
+    )
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(
+            shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 6.dp,
+            modifier = Modifier
+                .padding(24.dp)
+                .fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Schedule,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Selecionar Horário de Início",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                TimePicker(
+                    state = timePickerState
+                )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text("Cancelar", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = {
+                            onConfirm(timePickerState.hour, timePickerState.minute)
+                        },
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Confirmar")
+                    }
+                }
+            }
+        }
+    }
+}
+
 
