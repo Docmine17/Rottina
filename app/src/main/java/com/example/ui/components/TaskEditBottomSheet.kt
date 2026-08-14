@@ -68,16 +68,25 @@ private val PRESET_ICONS = listOf(
 )
 
 private val PRESET_COLORS = listOf(
-    "#F472B6", // Soft Pink
-    "#FACC15", // Vivid Yellow
-    "#38BDF8", // Vibrant Cyan
-    "#A78BFA", // Soft Purple
-    "#4ADE80", // Emerald Green
-    "#FB923C", // Warm Orange
-    "#FB7185", // Coral Red
-    "#818CF8", // Indigo Blue
-    "#2DD4BF", // Teal
-    "#C084FC"  // Lavender
+    "#F44336", // Red 500
+    "#E91E63", // Pink 500
+    "#9C27B0", // Purple 500
+    "#673AB7", // Deep Purple 500
+    "#3F51B5", // Indigo 500
+    "#2196F3", // Blue 500
+    "#03A9F4", // Light Blue 500
+    "#00BCD4", // Cyan 500
+    "#009688", // Teal 500
+    "#4CAF50", // Green 500
+    "#8BC34A", // Light Green 500
+    "#CDDC39", // Lime 500
+    "#FFEB3B", // Yellow 500
+    "#FFC107", // Amber 500
+    "#FF9800", // Orange 500
+    "#FF5722", // Deep Orange 500
+    "#795548", // Brown 500
+    "#9E9E9E", // Grey 500
+    "#607D8B"  // Blue Grey 500
 )
 
 private val DURATION_PRESETS = listOf(
