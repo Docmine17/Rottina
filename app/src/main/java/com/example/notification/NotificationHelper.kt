@@ -42,17 +42,19 @@ object NotificationHelper {
             ).apply {
                 description = "Notificações sonoras e com vibração dos horários das tarefas"
                 enableVibration(true)
+                lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
             }
 
             // Canal 2: Apenas Vibração (Silencioso sem som de áudio)
             val vibrationChannel = NotificationChannel(
                 CHANNEL_ID_VIBRATION,
                 "Lembretes de Rotina (Apenas Vibração)",
-                NotificationManager.IMPORTANCE_DEFAULT
+                NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = "Notificações com vibração discreta sem alerta sonoro"
                 enableVibration(true)
                 setSound(null, null)
+                lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
             }
 
             notificationManager.createNotificationChannel(soundChannel)
@@ -164,8 +166,40 @@ object NotificationHelper {
 
         val triggerEpochMillis = calculateNextTriggerMillis(minuteOfDay)
 
+        // Intent de exibição quando o usuário clica no despertador do sistema
+        val showIntent = Intent(context, com.example.MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val showPendingIntent = PendingIntent.getActivity(
+            context,
+            requestCode,
+            showIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            // Se o sistema suporta AlarmClockInfo (API 21+), usamos setAlarmClock que tem a
+            // prioridade máxima do sistema Android, acordando o dispositivo no segundo exato
+            // mesmo no sono profundo (Doze Mode) e com a tela apagada.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                // No Android 12+, se tiver a API canScheduleExactAlarms(), podemos checar antes
+                val canScheduleExact = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    alarmManager.canScheduleExactAlarms()
+                } else {
+                    true
+                }
+
+                if (canScheduleExact) {
+                    val alarmClockInfo = AlarmManager.AlarmClockInfo(triggerEpochMillis, showPendingIntent)
+                    alarmManager.setAlarmClock(alarmClockInfo, pendingIntent)
+                } else {
+                    alarmManager.setAndAllowWhileIdle(
+                        AlarmManager.RTC_WAKEUP,
+                        triggerEpochMillis,
+                        pendingIntent
+                    )
+                }
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 alarmManager.setExactAndAllowWhileIdle(
                     AlarmManager.RTC_WAKEUP,
                     triggerEpochMillis,
@@ -179,12 +213,26 @@ object NotificationHelper {
                 )
             }
         } catch (e: SecurityException) {
-            // Em Android 12+ sem permissão de alarme exato, usa set normal
-            alarmManager.set(
-                AlarmManager.RTC_WAKEUP,
-                triggerEpochMillis,
-                pendingIntent
-            )
+            // Fallback caso falte permissão explícita em versões específicas
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    alarmManager.setAndAllowWhileIdle(
+                        AlarmManager.RTC_WAKEUP,
+                        triggerEpochMillis,
+                        pendingIntent
+                    )
+                } else {
+                    alarmManager.set(
+                        AlarmManager.RTC_WAKEUP,
+                        triggerEpochMillis,
+                        pendingIntent
+                    )
+                }
+            } catch (fallbackEx: Exception) {
+                fallbackEx.printStackTrace()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
