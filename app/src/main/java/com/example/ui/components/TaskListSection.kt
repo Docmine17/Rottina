@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,7 +18,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -35,6 +39,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.data.model.NotificationMode
 import com.example.data.model.RoutineTask
 import java.time.LocalTime
 
@@ -45,6 +50,7 @@ fun TaskListSection(
     is24Hour: Boolean,
     onTaskClick: (RoutineTask) -> Unit,
     onToggleTask: (RoutineTask) -> Unit,
+    onCycleNotification: (RoutineTask) -> Unit,
     onAddTaskClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -230,6 +236,46 @@ fun TaskListSection(
                                     color = if (isActive) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
+
+                            // 3-State Notification Toggle (Off -> Sound -> Vibration -> Off)
+                            IconButton(
+                                onClick = { onCycleNotification(task) },
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Crossfade(
+                                    targetState = task.notificationMode,
+                                    label = "notification_mode_icon"
+                                ) { mode ->
+                                    when (mode) {
+                                        NotificationMode.OFF -> {
+                                            Icon(
+                                                imageVector = Icons.Default.NotificationsOff,
+                                                contentDescription = "Notificação: Desligada (Toque para ativar som)",
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f),
+                                                modifier = Modifier.size(22.dp)
+                                            )
+                                        }
+                                        NotificationMode.SOUND -> {
+                                            Icon(
+                                                imageVector = Icons.Default.NotificationsActive,
+                                                contentDescription = "Notificação: Com Som (Toque para só vibrar)",
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(22.dp)
+                                            )
+                                        }
+                                        NotificationMode.VIBRATION -> {
+                                            Icon(
+                                                imageVector = Icons.Default.Vibration,
+                                                contentDescription = "Notificação: Só Vibração (Toque para desligar)",
+                                                tint = MaterialTheme.colorScheme.tertiary,
+                                                modifier = Modifier.size(22.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.width(4.dp))
 
                             // Switch to enable/disable
                             Switch(

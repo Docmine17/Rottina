@@ -14,7 +14,12 @@ data class RoutineTask(
     val startMinute: Int = 720,       // Minutes from midnight (720 = 12:00 PM)
     val durationMinutes: Int = 60,   // Default 1 hour
     val isEnabled: Boolean = true,
-    val notes: String = ""
+    val notes: String = "",
+    val notificationMode: NotificationMode = NotificationMode.OFF,
+    val notifyAtStart: Boolean = true,
+    val startAdvanceMinutes: Int = 0,    // 0 (na hora), 5, 10, 15
+    val notifyAtEnd: Boolean = false,
+    val endAdvanceMinutes: Int = 0       // 0 (no término), 5 (5 min antes de acabar)
 ) {
     val endMinute: Int
         get() = (startMinute + durationMinutes) % 1440

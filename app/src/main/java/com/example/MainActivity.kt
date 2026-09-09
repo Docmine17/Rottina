@@ -1,8 +1,13 @@
 package com.example
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedVisibility
@@ -38,11 +43,16 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.core.content.ContextCompat
+import com.example.data.model.NotificationMode
+import com.example.notification.NotificationHelper
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -78,6 +88,7 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VisualClockAppScreen(viewModel: VisualClockViewModel) {
+    val context = LocalContext.current
     val tasks by viewModel.tasks.collectAsStateWithLifecycle()
     val currentTime by viewModel.currentTime.collectAsStateWithLifecycle()
     val isDarkMode by viewModel.isDarkMode.collectAsStateWithLifecycle()
@@ -90,6 +101,24 @@ fun VisualClockAppScreen(viewModel: VisualClockViewModel) {
     val draggedStartMinute by viewModel.draggedStartMinute.collectAsStateWithLifecycle()
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    // Permission launcher for POST_NOTIFICATIONS on Android 13+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { _ -> }
+
+    LaunchedEffect(Unit) {
+        NotificationHelper.createNotificationChannels(context)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val hasPermission = ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+            if (!hasPermission) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -258,6 +287,7 @@ fun VisualClockAppScreen(viewModel: VisualClockViewModel) {
                 is24Hour = !is12HourDial,
                 onTaskClick = { task -> viewModel.openEditTask(task) },
                 onToggleTask = { task -> viewModel.toggleTaskEnabled(task) },
+                onCycleNotification = { task -> viewModel.cycleNotificationMode(task) },
                 onAddTaskClick = { viewModel.openAddTask() }
             )
 

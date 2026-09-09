@@ -7,8 +7,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.data.db.AppDatabase
+import com.example.data.model.NotificationMode
 import com.example.data.model.RoutineTask
 import com.example.data.repository.TaskRepository
+import com.example.notification.NotificationHelper
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -150,17 +152,21 @@ class VisualClockViewModel(application: Application) : AndroidViewModel(applicat
 
     fun saveTask(task: RoutineTask) {
         viewModelScope.launch {
-            if (task.id == 0) {
-                repository.insert(task)
+            val savedTask = if (task.id == 0) {
+                val newId = repository.insert(task)
+                task.copy(id = newId.toInt())
             } else {
                 repository.update(task)
+                task
             }
+            NotificationHelper.scheduleTaskAlerts(getApplication(), savedTask)
             closeSheet()
         }
     }
 
     fun deleteTask(task: RoutineTask) {
         viewModelScope.launch {
+            NotificationHelper.cancelTaskAlerts(getApplication(), task.id)
             repository.delete(task)
             if (_editingTask.value?.id == task.id) {
                 closeSheet()
@@ -170,7 +176,30 @@ class VisualClockViewModel(application: Application) : AndroidViewModel(applicat
 
     fun toggleTaskEnabled(task: RoutineTask) {
         viewModelScope.launch {
-            repository.update(task.copy(isEnabled = !task.isEnabled))
+            val updated = task.copy(isEnabled = !task.isEnabled)
+            repository.update(updated)
+            if (updated.isEnabled) {
+                NotificationHelper.scheduleTaskAlerts(getApplication(), updated)
+            } else {
+                NotificationHelper.cancelTaskAlerts(getApplication(), task.id)
+            }
+        }
+    }
+
+    fun cycleNotificationMode(task: RoutineTask) {
+        viewModelScope.launch {
+            val nextMode = when (task.notificationMode) {
+                NotificationMode.OFF -> NotificationMode.SOUND
+                NotificationMode.SOUND -> NotificationMode.VIBRATION
+                NotificationMode.VIBRATION -> NotificationMode.OFF
+            }
+            val updated = task.copy(notificationMode = nextMode)
+            repository.update(updated)
+            if (updated.isEnabled && updated.notificationMode != NotificationMode.OFF) {
+                NotificationHelper.scheduleTaskAlerts(getApplication(), updated)
+            } else {
+                NotificationHelper.cancelTaskAlerts(getApplication(), task.id)
+            }
         }
     }
 
@@ -191,7 +220,11 @@ class VisualClockViewModel(application: Application) : AndroidViewModel(applicat
         val newStart = _draggedStartMinute.value
         viewModelScope.launch {
             if (newStart != null && newStart != task.startMinute) {
-                repository.update(task.copy(startMinute = newStart))
+                val updated = task.copy(startMinute = newStart)
+                repository.update(updated)
+                if (updated.isEnabled && updated.notificationMode != NotificationMode.OFF) {
+                    NotificationHelper.scheduleTaskAlerts(getApplication(), updated)
+                }
                 // Add a small delay to allow Room database flow to emit the updated list 
                 // to the UI before clearing the temporary drag state. This prevents visual 
                 // snapping back to the old position momentarily.

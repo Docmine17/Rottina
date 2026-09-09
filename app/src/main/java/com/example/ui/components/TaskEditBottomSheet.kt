@@ -27,11 +27,17 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -43,6 +49,8 @@ import androidx.compose.material3.SheetState
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
@@ -65,6 +73,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.emoji2.emojipicker.EmojiPickerView
+import com.example.data.model.NotificationMode
 import com.example.data.model.RoutineTask
 import java.time.LocalTime
 import java.util.Locale
@@ -143,6 +152,12 @@ fun TaskEditBottomSheet(
     var isCustomDuration by remember(task) {
         mutableStateOf(DURATION_PRESETS.none { it.first == task.durationMinutes })
     }
+
+    var notificationMode by remember(task) { mutableStateOf(task.notificationMode) }
+    var notifyAtStart by remember(task) { mutableStateOf(task.notifyAtStart) }
+    var startAdvanceMinutes by remember(task) { mutableIntStateOf(task.startAdvanceMinutes) }
+    var notifyAtEnd by remember(task) { mutableStateOf(task.notifyAtEnd) }
+    var endAdvanceMinutes by remember(task) { mutableIntStateOf(task.endAdvanceMinutes) }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -621,6 +636,290 @@ fun TaskEditBottomSheet(
                 }
             }
 
+            // Notification Settings Section
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = when (notificationMode) {
+                                NotificationMode.OFF -> Icons.Default.NotificationsOff
+                                NotificationMode.SOUND -> Icons.Default.NotificationsActive
+                                NotificationMode.VIBRATION -> Icons.Default.Vibration
+                            },
+                            contentDescription = null,
+                            tint = when (notificationMode) {
+                                NotificationMode.OFF -> MaterialTheme.colorScheme.onSurfaceVariant
+                                NotificationMode.SOUND -> MaterialTheme.colorScheme.primary
+                                NotificationMode.VIBRATION -> MaterialTheme.colorScheme.tertiary
+                            },
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Text(
+                            text = "Notificações e Lembretes",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+
+                    // Mode Selector: Desligado | Som | Vibração (Clean segmented row)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.surface)
+                            .padding(4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        val modes = listOf(
+                            Triple(NotificationMode.OFF, Icons.Default.NotificationsOff, "Desligado"),
+                            Triple(NotificationMode.SOUND, Icons.Default.NotificationsActive, "Som"),
+                            Triple(NotificationMode.VIBRATION, Icons.Default.Vibration, "Vibração")
+                        )
+
+                        modes.forEach { (mode, icon, label) ->
+                            val isSelected = notificationMode == mode
+                            Surface(
+                                onClick = { notificationMode = mode },
+                                shape = RoundedCornerShape(9.dp),
+                                color = if (isSelected) {
+                                    when (mode) {
+                                        NotificationMode.OFF -> MaterialTheme.colorScheme.surfaceVariant
+                                        NotificationMode.SOUND -> MaterialTheme.colorScheme.primaryContainer
+                                        NotificationMode.VIBRATION -> MaterialTheme.colorScheme.tertiaryContainer
+                                    }
+                                } else {
+                                    Color.Transparent
+                                },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(vertical = 10.dp, horizontal = 4.dp),
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = icon,
+                                        contentDescription = null,
+                                        tint = if (isSelected) {
+                                            when (mode) {
+                                                NotificationMode.OFF -> MaterialTheme.colorScheme.onSurfaceVariant
+                                                NotificationMode.SOUND -> MaterialTheme.colorScheme.onPrimaryContainer
+                                                NotificationMode.VIBRATION -> MaterialTheme.colorScheme.onTertiaryContainer
+                                            }
+                                        } else {
+                                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                                        },
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = label,
+                                        fontSize = 13.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (isSelected) {
+                                            when (mode) {
+                                                NotificationMode.OFF -> MaterialTheme.colorScheme.onSurfaceVariant
+                                                NotificationMode.SOUND -> MaterialTheme.colorScheme.onPrimaryContainer
+                                                NotificationMode.VIBRATION -> MaterialTheme.colorScheme.onTertiaryContainer
+                                            }
+                                        } else {
+                                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                        },
+                                        maxLines = 1
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // Detailed timing options (visible if notification is enabled)
+                    if (notificationMode != NotificationMode.OFF) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(14.dp)
+                        ) {
+                            androidx.compose.material3.HorizontalDivider(
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                                thickness = 1.dp
+                            )
+
+                            // 1. Início da Tarefa
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = "Lembrete de Início",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Text(
+                                            text = "A tarefa começa às $displayFormattedTime",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    Switch(
+                                        checked = notifyAtStart,
+                                        onCheckedChange = { notifyAtStart = it },
+                                        colors = SwitchDefaults.colors(
+                                            checkedThumbColor = MaterialTheme.colorScheme.primary,
+                                            checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                                        )
+                                    )
+                                }
+
+                                if (notifyAtStart) {
+                                    Text(
+                                        text = "Quando tocar:",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .horizontalScroll(rememberScrollState()),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        val startOptions = listOf(
+                                            0 to "No início exato",
+                                            5 to "5 min antes",
+                                            10 to "10 min antes",
+                                            15 to "15 min antes"
+                                        )
+                                        startOptions.forEach { (mins, label) ->
+                                            val isChosen = startAdvanceMinutes == mins
+                                            FilterChip(
+                                                selected = isChosen,
+                                                onClick = { startAdvanceMinutes = mins },
+                                                label = { 
+                                                    Text(
+                                                        text = label, 
+                                                        fontSize = 12.sp,
+                                                        fontWeight = if (isChosen) FontWeight.Bold else FontWeight.Normal
+                                                    ) 
+                                                },
+                                                shape = RoundedCornerShape(8.dp),
+                                                colors = FilterChipDefaults.filterChipColors(
+                                                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                                )
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            androidx.compose.material3.HorizontalDivider(
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                                thickness = 1.dp
+                            )
+
+                            // 2. Fim da Tarefa
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                val endFormattedTime = remember(startMinute, durationMinutes, is24HourFormat) {
+                                    val endMin = (startMinute + durationMinutes) % 1440
+                                    val eh = endMin / 60
+                                    val em = endMin % 60
+                                    if (is24HourFormat) {
+                                        String.format(Locale.getDefault(), "%02d:%02d", eh, em)
+                                    } else {
+                                        val h12 = if (eh % 12 == 0) 12 else eh % 12
+                                        val amPm = if (eh < 12) "AM" else "PM"
+                                        String.format(Locale.getDefault(), "%02d:%02d %s", h12, em, amPm)
+                                    }
+                                }
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = "Lembrete de Encerramento",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Text(
+                                            text = "A tarefa encerra às $endFormattedTime",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    Switch(
+                                        checked = notifyAtEnd,
+                                        onCheckedChange = { notifyAtEnd = it },
+                                        colors = SwitchDefaults.colors(
+                                            checkedThumbColor = MaterialTheme.colorScheme.primary,
+                                            checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                                        )
+                                    )
+                                }
+
+                                if (notifyAtEnd) {
+                                    Text(
+                                        text = "Quando tocar:",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .horizontalScroll(rememberScrollState()),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        val endOptions = listOf(
+                                            0 to "No término exato",
+                                            5 to "5 min antes de acabar"
+                                        )
+                                        endOptions.forEach { (mins, label) ->
+                                            val isChosen = endAdvanceMinutes == mins
+                                            FilterChip(
+                                                selected = isChosen,
+                                                onClick = { endAdvanceMinutes = mins },
+                                                label = { 
+                                                    Text(
+                                                        text = label, 
+                                                        fontSize = 12.sp,
+                                                        fontWeight = if (isChosen) FontWeight.Bold else FontWeight.Normal
+                                                    ) 
+                                                },
+                                                shape = RoundedCornerShape(8.dp),
+                                                colors = FilterChipDefaults.filterChipColors(
+                                                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                                )
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(8.dp))
 
             // Save Action Button
@@ -633,7 +932,12 @@ fun TaskEditBottomSheet(
                                 icon = selectedIcon,
                                 colorHex = selectedColorHex,
                                 startMinute = startMinute,
-                                durationMinutes = durationMinutes
+                                durationMinutes = durationMinutes,
+                                notificationMode = notificationMode,
+                                notifyAtStart = notifyAtStart,
+                                startAdvanceMinutes = startAdvanceMinutes,
+                                notifyAtEnd = notifyAtEnd,
+                                endAdvanceMinutes = endAdvanceMinutes
                             )
                         )
                     }
