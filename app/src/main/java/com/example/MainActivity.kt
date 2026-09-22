@@ -114,6 +114,7 @@ fun VisualClockAppScreen(viewModel: VisualClockViewModel) {
 
     LaunchedEffect(Unit) {
         NotificationHelper.createNotificationChannels(context)
+        NotificationHelper.rescheduleAllActiveTasks(context)
     }
 
     Scaffold(

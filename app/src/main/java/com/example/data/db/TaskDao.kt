@@ -14,6 +14,9 @@ interface TaskDao {
     @Query("SELECT * FROM routine_tasks ORDER BY startMinute ASC")
     fun getAllTasks(): Flow<List<RoutineTask>>
 
+    @Query("SELECT * FROM routine_tasks WHERE id = :id")
+    suspend fun getTaskById(id: Int): RoutineTask?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTask(task: RoutineTask): Long
 

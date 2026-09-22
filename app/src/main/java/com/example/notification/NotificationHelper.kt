@@ -7,9 +7,13 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import com.example.data.db.AppDatabase
 import com.example.data.model.NotificationMode
 import com.example.data.model.RoutineTask
-import java.time.LocalDate
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
@@ -59,6 +63,28 @@ object NotificationHelper {
 
             notificationManager.createNotificationChannel(soundChannel)
             notificationManager.createNotificationChannel(vibrationChannel)
+        }
+    }
+
+    /**
+     * Reagenda todas as tarefas ativas do banco de dados para garantir que os lembretes diários
+     * estejam sempre sincronizados (executado ao abrir o app e após reiniciar o sistema).
+     */
+    fun rescheduleAllActiveTasks(context: Context) {
+        val db = AppDatabase.getDatabase(context)
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val tasks = db.taskDao().getAllTasks().first()
+                tasks.forEach { task ->
+                    if (task.isEnabled && task.notificationMode != NotificationMode.OFF) {
+                        scheduleTaskAlerts(context, task)
+                    } else {
+                        cancelTaskAlerts(context, task.id)
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
@@ -166,23 +192,11 @@ object NotificationHelper {
 
         val triggerEpochMillis = calculateNextTriggerMillis(minuteOfDay)
 
-        // Intent de exibição quando o usuário clica no despertador do sistema
-        val showIntent = Intent(context, com.example.MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-        }
-        val showPendingIntent = PendingIntent.getActivity(
-            context,
-            requestCode,
-            showIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
         try {
-            // Se o sistema suporta AlarmClockInfo (API 21+), usamos setAlarmClock que tem a
-            // prioridade máxima do sistema Android, acordando o dispositivo no segundo exato
-            // mesmo no sono profundo (Doze Mode) e com a tela apagada.
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                // No Android 12+, se tiver a API canScheduleExactAlarms(), podemos checar antes
+            // Em vez de setAlarmClock (que coloca um ícone permanente de despertador no relógio do sistema),
+            // usamos setExactAndAllowWhileIdle para acordar o dispositivo pontualmente em segundo plano (Doze Mode)
+            // sem poluir a barra de status como se fosse um alarme de acordar da manhã.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 val canScheduleExact = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     alarmManager.canScheduleExactAlarms()
                 } else {
@@ -190,8 +204,11 @@ object NotificationHelper {
                 }
 
                 if (canScheduleExact) {
-                    val alarmClockInfo = AlarmManager.AlarmClockInfo(triggerEpochMillis, showPendingIntent)
-                    alarmManager.setAlarmClock(alarmClockInfo, pendingIntent)
+                    alarmManager.setExactAndAllowWhileIdle(
+                        AlarmManager.RTC_WAKEUP,
+                        triggerEpochMillis,
+                        pendingIntent
+                    )
                 } else {
                     alarmManager.setAndAllowWhileIdle(
                         AlarmManager.RTC_WAKEUP,
@@ -199,12 +216,6 @@ object NotificationHelper {
                         pendingIntent
                     )
                 }
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                alarmManager.setExactAndAllowWhileIdle(
-                    AlarmManager.RTC_WAKEUP,
-                    triggerEpochMillis,
-                    pendingIntent
-                )
             } else {
                 alarmManager.setExact(
                     AlarmManager.RTC_WAKEUP,
@@ -213,7 +224,7 @@ object NotificationHelper {
                 )
             }
         } catch (e: SecurityException) {
-            // Fallback caso falte permissão explícita em versões específicas
+            // Fallback resiliente caso faltem permissões restritivas no sistema
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     alarmManager.setAndAllowWhileIdle(
@@ -238,11 +249,12 @@ object NotificationHelper {
 
     fun cancelTaskAlerts(context: Context, taskId: Int) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         val alertTypes = listOf(TYPE_START_EXACT, TYPE_START_EARLY, TYPE_END_EXACT, TYPE_END_EARLY)
         for (alertType in alertTypes) {
-            val intent = Intent(context, NotificationReceiver::class.java)
             val requestCode = (taskId * 10) + alertType
+            val intent = Intent(context, NotificationReceiver::class.java)
             val pendingIntent = PendingIntent.getBroadcast(
                 context,
                 requestCode,
@@ -253,6 +265,8 @@ object NotificationHelper {
                 alarmManager.cancel(pendingIntent)
                 pendingIntent.cancel()
             }
+            // Descarta qualquer notificação ativa dessa tarefa na bandeja
+            notificationManager.cancel(requestCode)
         }
     }
 
@@ -261,8 +275,9 @@ object NotificationHelper {
         val targetTime = LocalTime.of(minuteOfDay / 60, minuteOfDay % 60, 0)
         var targetDateTime = LocalDateTime.of(now.toLocalDate(), targetTime)
 
-        // Se já passou do horário no dia de hoje (ou dentro dos últimos 20 segundos), agenda para o próximo dia
-        if (!targetDateTime.isAfter(now.plusSeconds(5))) {
+        // Se já passou do horário no dia de hoje (ou dentro dos próximos 30 segundos),
+        // agenda para o mesmo horário de amanhã, garantindo que o ciclo diário continue.
+        if (!targetDateTime.isAfter(now.plusSeconds(30))) {
             targetDateTime = targetDateTime.plusDays(1)
         }
 

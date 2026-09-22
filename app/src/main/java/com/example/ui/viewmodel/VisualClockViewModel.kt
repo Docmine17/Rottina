@@ -66,7 +66,8 @@ class VisualClockViewModel(application: Application) : AndroidViewModel(applicat
     private val _is12HourDial = MutableStateFlow(prefs.getBoolean("is_12h_dial", true))
     val is12HourDial: StateFlow<Boolean> = _is12HourDial.asStateFlow()
 
-    private val _showTutorial = MutableStateFlow(prefs.getBoolean("show_tutorial", true))
+    // Force show tutorial on first upgrade to new onboarding version (version 2)
+    private val _showTutorial = MutableStateFlow(prefs.getBoolean("show_tutorial_v2", true))
     val showTutorial: StateFlow<Boolean> = _showTutorial.asStateFlow()
 
     // Task currently being edited or created
@@ -117,7 +118,7 @@ class VisualClockViewModel(application: Application) : AndroidViewModel(applicat
 
     fun dismissTutorial() {
         _showTutorial.value = false
-        prefs.edit().putBoolean("show_tutorial", false).apply()
+        prefs.edit().putBoolean("show_tutorial_v2", false).apply()
     }
 
     fun openTutorial() {
