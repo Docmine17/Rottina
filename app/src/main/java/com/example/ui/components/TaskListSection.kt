@@ -37,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.NotificationMode
@@ -192,16 +193,22 @@ fun TaskListSection(
 
                             // Task Details
                             Column(modifier = Modifier.weight(1f)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
                                     Text(
                                         text = task.title,
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.weight(1f, fill = false),
                                         color = if (isActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
                                     )
 
                                     if (isActive) {
-                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Spacer(modifier = Modifier.width(6.dp))
                                         Surface(
                                             color = taskColor,
                                             shape = RoundedCornerShape(8.dp)
@@ -221,7 +228,8 @@ fun TaskListSection(
                                                     text = "AGORA",
                                                     fontSize = 10.sp,
                                                     fontWeight = FontWeight.ExtraBold,
-                                                    color = Color.Black
+                                                    color = Color.Black,
+                                                    maxLines = 1
                                                 )
                                             }
                                         }
@@ -233,6 +241,8 @@ fun TaskListSection(
                                 Text(
                                     text = "${task.formatTimeRange(is24Hour)} (${task.durationMinutes} min)",
                                     style = MaterialTheme.typography.bodySmall,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
                                     color = if (isActive) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
